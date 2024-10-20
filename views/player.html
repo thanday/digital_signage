@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Player</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      background-color: black;
+    }
+  </style>
+</head>
+<body>
+  <video id="videoPlayer" controls muted>
+    <source id="videoSource" src="" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const player = document.getElementById('videoPlayer');
+    const source = document.getElementById('videoSource');
+    const socket = io.connect('http://localhost:3000');
+
+    let playlist = [];
+    let currentVideoIndex = 0;
+    let loopSingleVideo = false;
+
+    // Function to load and play a video
+    function loadAndPlayVideo(videoUrl) {
+      source.src = videoUrl;
+      player.load();  // Load the new video
+      player.play();  // Play the video automatically
+    }
+
+    // Handle playing a single video
+    socket.on('playVideo', (videoUrl) => {
+      loopSingleVideo = false;  // Disable single video loop
+      loadAndPlayVideo(videoUrl);
+    });
+
+    // Handle playlist loop
+    socket.on('startLoop', (playlistArray) => {
+      loopSingleVideo = false;  // Disable single video loop
+      playlist = playlistArray;
+      currentVideoIndex = 0;
+      loadAndPlayVideo(playlist[currentVideoIndex]);
+    });
+
+    // Handle single video loop
+    socket.on('loopSingle', (videoUrl) => {
+      loopSingleVideo = true;  // Enable single video loop
+      loadAndPlayVideo(videoUrl);
+    });
+
+    // Play the next video or repeat the same one based on the mode
+    player.addEventListener('ended', () => {
+      if (loopSingleVideo) {
+        player.currentTime = 0;  // Loop the current video
+        player.play();
+      } else {
+        currentVideoIndex = (currentVideoIndex + 1) % playlist.length;  // Loop to first video after the last
+        loadAndPlayVideo(playlist[currentVideoIndex]);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controller</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <style>
+        body {
+          background-color: #1a1a2e; /* Dark background */
+          font-family: 'Arial', sans-serif;
+        }
+      </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6 bg-gray-900 text-gray-200">
+    <div class="w-full max-w-6xl bg-gray-800 rounded-lg shadow-lg p-6">
+      <div class="grid grid-cols-12 gap-4">
+        
+        <!-- Playlist Panel -->
+        <div class="col-span-3 bg-gray-700 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold mb-4 text-gray-300">Playlist</h2>
+          <ul id="playlist" class="space-y-2 overflow-y-auto h-72">
+            <!-- Video files will be listed here -->
+            <li class="p-2 bg-gray-600 rounded-md text-sm cursor-pointer text-gray-200 hover:bg-gray-500">
+              No videos uploaded yet
+            </li>
+          </ul>
+        </div>
+        
+        <!-- Video Preview Panel -->
+        <div class="col-span-6 bg-gray-700 p-4 rounded-lg flex flex-col items-center">
+          <h2 class="text-lg font-semibold mb-4 text-gray-300">Video Preview</h2>
+          <video id="videoPreview" class="w-full h-48 bg-black rounded-lg mb-4" controls></video>
+          <div class="flex justify-between space-x-4 w-full">
+            <button id="playSingle" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+              Play Selected
+            </button>
+            <button id="loopSingle" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
+              Loop Single
+            </button>
+          </div>
+        </div>
+  
+        <!-- Control Panel -->
+        <div class="col-span-3 bg-gray-700 p-4 rounded-lg">
+          <h2 class="text-lg font-semibold mb-4 text-gray-300">Controls</h2>
+          <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/upload">
+            <input type="file" name="videoFile" class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg cursor-pointer focus:outline-none">
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg mt-2 transition-all duration-300">
+              Upload Video
+            </button>
+          </form>
+          <button id="loopPlaylist" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold py-2 px-4 rounded-lg mt-4 transition-all duration-300">
+            Loop Playlist
+          </button>
+        </div>
+  
+      </div>
+    </div>
+  
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io.connect('http://localhost:3000');
+      const playlist = document.getElementById('playlist');
+      let playlistArray = [];
+  
+      // Handle video uploads
+      document.getElementById('uploadForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const response = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (response.ok) {
+          alert('Video uploaded successfully');
+          loadPlaylist();  // Refresh playlist after upload
+        } else {
+          alert('Upload failed');
+        }
+      };
+  
+      // Load uploaded videos into playlist
+      async function loadPlaylist() {
+        const response = await fetch('/videos');
+        const videos = await response.json();
+        playlist.innerHTML = '';
+        playlistArray = videos.map(video => `/videos/${video}`);  // Store video URLs
+        videos.forEach((video, index) => {
+          const li = document.createElement('li');
+          li.innerText = `Video ${index + 1}`;
+          li.dataset.url = `/videos/${video}`;
+          li.classList.add('p-2', 'bg-gray-600', 'rounded-md', 'text-sm', 'cursor-pointer', 'text-gray-200', 'hover:bg-gray-500');
+          li.onclick = () => {
+            document.querySelectorAll('#playlist li').forEach(item => item.classList.remove('bg-blue-500'));
+            li.classList.add('bg-blue-500');
+          };
+          playlist.appendChild(li);
+        });
+      }
+  
+      // Play selected video
+      document.getElementById('playSingle').addEventListener('click', () => {
+        const selectedVideo = document.querySelector('#playlist li.bg-blue-500');
+        if (selectedVideo) {
+          const videoUrl = selectedVideo.dataset.url;
+          document.getElementById('videoPreview').src = videoUrl;  // Show video in preview
+          socket.emit('playVideo', videoUrl);  // Send play event to player
+        } else {
+          alert('Select a video from the playlist');
+        }
+      });
+  
+      // Loop a single video
+      document.getElementById('loopSingle').addEventListener('click', () => {
+        const selectedVideo = document.querySelector('#playlist li.bg-blue-500');
+        if (selectedVideo) {
+          const videoUrl = selectedVideo.dataset.url;
+          socket.emit('loopSingle', videoUrl);
+        } else {
+          alert('Select a video to loop');
+        }
+      });
+  
+      // Loop playlist
+      document.getElementById('loopPlaylist').addEventListener('click', () => {
+        if (playlistArray.length > 0) {
+          socket.emit('startLoop', playlistArray);  // Send playlist loop event to player
+        } else {
+          alert('No videos in the playlist');
+        }
+      });
+  
+      // Load the playlist initially
+      loadPlaylist();
+    </script>
+  </body>
+
+</html>
