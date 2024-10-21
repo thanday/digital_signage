@@ -11,10 +11,18 @@
           background-color: #1a1a2e; /* Dark background */
           font-family: 'Arial', sans-serif;
         }
+        .selected {
+          background-color: #4CAF50; /* Green background for selected video */
+          color: white; /* White text for contrast */
+        }
       </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-6 bg-gray-900 text-gray-200">
-    <div class="w-full max-w-6xl bg-gray-800 rounded-lg shadow-lg p-6">
+    <div class="w-full max-w-5xl h-full max-h-80 bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="p-4 rounded-lg flex flex-col items-center">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Screen One Controller</h2>
+        </div>
+
       <div class="grid grid-cols-12 gap-4">
         
         <!-- Playlist Panel -->
@@ -31,15 +39,7 @@
         <!-- Video Preview Panel -->
         <div class="col-span-6 bg-gray-700 p-4 rounded-lg flex flex-col items-center">
           <h2 class="text-lg font-semibold mb-4 text-gray-300">Video Preview</h2>
-          <video id="videoPreview" class="w-full h-48 bg-black rounded-lg mb-4" controls></video>
-          <div class="flex justify-between space-x-4 w-full">
-            <button id="playSingle" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
-              Play Selected
-            </button>
-            <button id="loopSingle" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300">
-              Loop Single
-            </button>
-          </div>
+          <video id="videoPreview" class="w-full  bg-black rounded-lg mb-4" controls></video>
         </div>
   
         <!-- Control Panel -->
@@ -54,6 +54,12 @@
           <button id="loopPlaylist" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold py-2 px-4 rounded-lg mt-4 transition-all duration-300">
             Loop Playlist
           </button>
+          <button id="playSingle" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg mt-4 transition-all duration-300">
+            Play Selected
+          </button>
+          <button id="loopSingle" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg mt-4 transition-all duration-300">
+            Loop Single
+          </button>
         </div>
   
       </div>
@@ -63,9 +69,9 @@
     <script>
       const socket = io.connect('http://localhost:3000');
       const playlist = document.getElementById('playlist');
+      const videoPreview = document.getElementById('videoPreview');  // The video preview element
       let playlistArray = [];
   
-      // Handle video uploads
       document.getElementById('uploadForm').onsubmit = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
@@ -75,46 +81,51 @@
         });
         if (response.ok) {
           alert('Video uploaded successfully');
-          loadPlaylist();  // Refresh playlist after upload
+          loadPlaylist();  
         } else {
           alert('Upload failed');
         }
       };
   
-      // Load uploaded videos into playlist
-      async function loadPlaylist() {
-        const response = await fetch('/videos');
-        const videos = await response.json();
-        playlist.innerHTML = '';
-        playlistArray = videos.map(video => `/videos/${video}`);  // Store video URLs
-        videos.forEach((video, index) => {
-          const li = document.createElement('li');
-          li.innerText = `Video ${index + 1}`;
-          li.dataset.url = `/videos/${video}`;
-          li.classList.add('p-2', 'bg-gray-600', 'rounded-md', 'text-sm', 'cursor-pointer', 'text-gray-200', 'hover:bg-gray-500');
-          li.onclick = () => {
-            document.querySelectorAll('#playlist li').forEach(item => item.classList.remove('bg-blue-500'));
-            li.classList.add('bg-blue-500');
-          };
-          playlist.appendChild(li);
-        });
-      }
-  
-      // Play selected video
+    // Load uploaded videos into playlist and display their exact file names
+    async function loadPlaylist() {
+      const response = await fetch('/videos');
+      const videos = await response.json();
+      playlist.innerHTML = '';  // Clear the playlist before loading
+      playlistArray = videos.map(video => `/videos/${video}`);  // Store video URLs
+      videos.forEach((video) => {
+        const li = document.createElement('li');
+        li.innerText = video;  // Use the exact video file name
+        li.dataset.url = `/videos/${video}`;
+        li.classList.add('p-2', 'bg-gray-600', 'rounded-md', 'text-sm', 'cursor-pointer', 'text-gray-200', 'hover:bg-gray-500');
+        li.onclick = () => {
+          // Remove the 'selected' class from any previously selected video
+          document.querySelectorAll('#playlist li').forEach(item => item.classList.remove('selected'));
+          // Add 'selected' class to the clicked video
+          li.classList.add('selected');
+
+          // Update the video preview source to the selected video
+          videoPreview.src = li.dataset.url;
+          videoPreview.load();  // Load the selected video in the preview
+          videoPreview.play();  // Automatically play the selected video
+        };
+        playlist.appendChild(li);
+      });
+    }
+
       document.getElementById('playSingle').addEventListener('click', () => {
-        const selectedVideo = document.querySelector('#playlist li.bg-blue-500');
+        const selectedVideo = document.querySelector('#playlist li.selected');
         if (selectedVideo) {
           const videoUrl = selectedVideo.dataset.url;
-          document.getElementById('videoPreview').src = videoUrl;  // Show video in preview
-          socket.emit('playVideo', videoUrl);  // Send play event to player
+          socket.emit('playVideo', videoUrl);  
         } else {
           alert('Select a video from the playlist');
         }
       });
   
-      // Loop a single video
+
       document.getElementById('loopSingle').addEventListener('click', () => {
-        const selectedVideo = document.querySelector('#playlist li.bg-blue-500');
+        const selectedVideo = document.querySelector('#playlist li.selected');
         if (selectedVideo) {
           const videoUrl = selectedVideo.dataset.url;
           socket.emit('loopSingle', videoUrl);
@@ -123,16 +134,16 @@
         }
       });
   
-      // Loop playlist
+
       document.getElementById('loopPlaylist').addEventListener('click', () => {
         if (playlistArray.length > 0) {
-          socket.emit('startLoop', playlistArray);  // Send playlist loop event to player
+          socket.emit('startLoop', playlistArray);  
         } else {
           alert('No videos in the playlist');
         }
       });
   
-      // Load the playlist initially
+     
       loadPlaylist();
     </script>
   </body>
