@@ -18,7 +18,7 @@
       </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-6 bg-gray-900 text-gray-200">
-    <div class="w-full max-w-5xl h-full max-h-80 bg-gray-800 rounded-lg shadow-lg p-6">
+    <div class="w-full max-w-6xl h-full max-h-80 bg-gray-800 rounded-lg shadow-lg p-6">
         <div class="p-4 rounded-lg flex flex-col items-center">
             <h2 class="text-lg font-semibold mb-4 text-gray-300">Screen One Controller</h2>
         </div>
@@ -67,7 +67,7 @@
   
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      const socket = io.connect('http://143.198.85.144:3000');
+      const socket = io.connect('http://localhost:3000');
       const playlist = document.getElementById('playlist');
       const videoPreview = document.getElementById('videoPreview');  // The video preview element
       let playlistArray = [];
@@ -95,19 +95,15 @@
       playlistArray = videos.map(video => `/videos/${video}`);  // Store video URLs
       videos.forEach((video) => {
         const li = document.createElement('li');
-        li.innerText = video;  // Use the exact video file name
+        li.innerText = video;  
         li.dataset.url = `/videos/${video}`;
         li.classList.add('p-2', 'bg-gray-600', 'rounded-md', 'text-sm', 'cursor-pointer', 'text-gray-200', 'hover:bg-gray-500');
         li.onclick = () => {
-          // Remove the 'selected' class from any previously selected video
           document.querySelectorAll('#playlist li').forEach(item => item.classList.remove('selected'));
-          // Add 'selected' class to the clicked video
           li.classList.add('selected');
-
-          // Update the video preview source to the selected video
           videoPreview.src = li.dataset.url;
-          videoPreview.load();  // Load the selected video in the preview
-          videoPreview.play();  // Automatically play the selected video
+          videoPreview.load();  
+          videoPreview.play();  
         };
         playlist.appendChild(li);
       });
