@@ -2,146 +2,171 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controller</title>
-    <link href="/css/output.css" rel="stylesheet">
-    <style>
-        body {
-          background-color: #1a1a2e; /* Dark background */
-          font-family: 'Arial', sans-serif;
-        }
-        .selected {
-          background-color: #4CAF50; /* Green background for selected video */
-          color: white; /* White text for contrast */
-        }
-      </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controller</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link href="/css/output.css" rel="stylesheet">
 </head>
-<body class="min-h-screen flex items-center justify-center p-6 bg-gray-900 text-gray-200">
-    <div class="w-full max-w-6xl h-full max-h-80 bg-gray-800 rounded-lg shadow-lg p-6">
-        <div class="p-4 rounded-lg flex flex-col items-center">
-            <h2 class="text-lg font-semibold mb-4 text-gray-300">Screen One Controller</h2>
-        </div>
 
-      <div class="grid grid-cols-12 gap-4">
-        
-        <!-- Playlist Panel -->
-        <div class="col-span-3 bg-gray-700 p-4 rounded-lg">
-          <h2 class="text-lg font-semibold mb-4 text-gray-300">Playlist</h2>
-          <ul id="playlist" class="space-y-2 overflow-y-auto h-72">
-            <!-- Video files will be listed here -->
-            <li class="p-2 bg-gray-600 rounded-md text-sm cursor-pointer text-gray-200 hover:bg-gray-500">
-              No videos uploaded yet
-            </li>
-          </ul>
+<body class="bg-gray-900 text-gray-200 p-6">
+  <h1 class="text-4xl mb-6 text-center">Multi-Screen Controller</h1>
+
+  <div id="controllerContainer" 
+       class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  </div>
+
+  <script>
+    const socket = io.connect('http://localhost:3000');
+    socket.on('connect_error', (err) => {
+      console.error('Socket.IO Connection Error:', err);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Socket.IO Disconnected:', reason);
+    });
+
+    const controllerContainer = document.getElementById('controllerContainer');
+
+    async function loadScreens() {
+      const response = await fetch('/screens');
+      const screens = await response.json();
+      screens.forEach(screen => createControllerForScreen(screen));
+    }
+
+    function createControllerForScreen(screen) {
+      const controllerDiv = document.createElement('div');
+      controllerDiv.classList.add('bg-gray-600', 'rounded-lg', 'p-6', 'shadow-lg');
+
+      controllerDiv.innerHTML = `
+        <div class="flex flex-col items-center mb-4">
+          <h2 class="text-lg font-semibold text-gray-300">Controller for ${screen.name}</h2>
         </div>
-        
-        <!-- Video Preview Panel -->
-        <div class="col-span-6 bg-gray-700 p-4 rounded-lg flex flex-col items-center">
-          <h2 class="text-lg font-semibold mb-4 text-gray-300">Video Preview</h2>
-          <video id="videoPreview" class="w-full  bg-black rounded-lg mb-4" controls></video>
+        <div class="grid grid-cols-12 gap-4">
+          <div class="col-span-3 bg-gray-700 p-4 rounded-lg">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Playlist</h2>
+            <ul class="playlist space-y-2 overflow-y-auto h-72"></ul>
+          </div>
+          <div class="col-span-6 bg-gray-700 p-4 rounded-lg flex flex-col items-center">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Video Preview</h2>
+            <video class="videoPreview w-full bg-black rounded-lg mb-4" controls></video>
+          </div>
+          <div class="col-span-3 bg-gray-700 p-4 rounded-lg">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Controls</h2>
+            <form class="uploadForm">
+              <input type="file" name="videoFile" class="block w-full text-sm bg-gray-50 rounded-lg border border-gray-300 cursor-pointer">
+              <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg mt-2">Upload Video</button>
+            </form>
+            <button class="playSingleBtn w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg mt-4">Play Selected</button>
+            <button class="loopSingleBtn w-full bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg mt-4">Loop Single</button>
+            <button class="loopPlaylistBtn w-full bg-yellow-500 text-gray-900 font-semibold py-2 px-4 rounded-lg mt-4">Loop Playlist</button>
+          </div>
         </div>
-  
-        <!-- Control Panel -->
-        <div class="col-span-3 bg-gray-700 p-4 rounded-lg">
-          <h2 class="text-lg font-semibold mb-4 text-gray-300">Controls</h2>
-          <form id="uploadForm" enctype="multipart/form-data" method="POST" action="/upload">
-            <input type="file" name="videoFile" class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg cursor-pointer focus:outline-none">
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg mt-2 transition-all duration-300">
-              Upload Video
-            </button>
-          </form>
-          <button id="loopPlaylist" class="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold py-2 px-4 rounded-lg mt-4 transition-all duration-300">
-            Loop Playlist
-          </button>
-          <button id="playSingle" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg mt-4 transition-all duration-300">
-            Play Selected
-          </button>
-          <button id="loopSingle" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg mt-4 transition-all duration-300">
-            Loop Single
-          </button>
-        </div>
-  
-      </div>
-    </div>
-  
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-      const socket = io.connect('http://localhost:3000');
-      const playlist = document.getElementById('playlist');
-      const videoPreview = document.getElementById('videoPreview');  // The video preview element
-      let playlistArray = [];
-  
-      document.getElementById('uploadForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        const response = await fetch('/upload', {
-          method: 'POST',
-          body: formData
+      `;
+
+      controllerContainer.appendChild(controllerDiv);
+
+      const playlist = controllerDiv.querySelector('.playlist');
+      const videoPreview = controllerDiv.querySelector('.videoPreview');
+      const uploadForm = controllerDiv.querySelector('.uploadForm');
+      const playSingleBtn = controllerDiv.querySelector('.playSingleBtn');
+      const loopSingleBtn = controllerDiv.querySelector('.loopSingleBtn');
+      const loopPlaylistBtn = controllerDiv.querySelector('.loopPlaylistBtn');
+
+      async function loadPlaylist() {
+        const response = await fetch(`/videos/${screen.name}`);
+        const videos = await response.json();
+        playlist.innerHTML = '';
+        videos.forEach(videoUrl => {
+          const li = document.createElement('li');
+          const fileName = videoUrl.split('/').pop();
+          li.classList.add('p-2', 'bg-gray-600', 'rounded-md', 'text-sm', 'cursor-pointer', 'text-gray-200', 'flex', 'justify-between', 'items-center');
+          li.dataset.url = videoUrl;
+
+          // Video play click event on the list item (span for video title)
+          const videoTitle = document.createElement('span');
+          videoTitle.innerText = fileName;
+          videoTitle.classList.add('cursor-pointer');
+          videoTitle.onclick = () => {
+            document.querySelectorAll('.playlist li').forEach(item => item.classList.remove('selected'));
+            li.classList.add('selected');
+            videoPreview.src = videoUrl;
+            videoPreview.load();
+            videoPreview.play();
+          };
+
+          // Delete button event
+          const deleteBtn = document.createElement('button');
+          deleteBtn.innerText = 'Delete';
+          deleteBtn.classList.add('deleteBtn', 'bg-red-500', 'text-white', 'rounded', 'px-2', 'ml-2');
+          deleteBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const confirmed = confirm(`Are you sure you want to delete ${fileName}?`);
+            if (confirmed) {
+              const deleteResponse = await fetch(`/videos/${screen.name}/${fileName}`, { method: 'DELETE' });
+              if (deleteResponse.ok) {
+                alert('Video deleted successfully');
+                loadPlaylist();
+              } else {
+                alert('Failed to delete video');
+              }
+            }
+          };
+
+          li.appendChild(videoTitle);
+          li.appendChild(deleteBtn);
+          playlist.appendChild(li);
         });
+      }
+
+      uploadForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(uploadForm);
+        const response = await fetch(`/upload/${screen.name}`, { method: 'POST', body: formData });
         if (response.ok) {
           alert('Video uploaded successfully');
-          loadPlaylist();  
+          loadPlaylist();
         } else {
           alert('Upload failed');
         }
       };
-  
-    // Load uploaded videos into playlist and display their exact file names
-    async function loadPlaylist() {
-      const response = await fetch('/videos');
-      const videos = await response.json();
-      playlist.innerHTML = '';  // Clear the playlist before loading
-      playlistArray = videos.map(video => `/videos/${video}`);  // Store video URLs
-      videos.forEach((video) => {
-        const li = document.createElement('li');
-        li.innerText = video;  
-        li.dataset.url = `/videos/${video}`;
-        li.classList.add('p-2', 'bg-gray-600', 'rounded-md', 'text-sm', 'cursor-pointer', 'text-gray-200', 'hover:bg-gray-500');
-        li.onclick = () => {
-          document.querySelectorAll('#playlist li').forEach(item => item.classList.remove('selected'));
-          li.classList.add('selected');
-          videoPreview.src = li.dataset.url;
-          videoPreview.load();  
-          videoPreview.play();  
-        };
-        playlist.appendChild(li);
-      });
-    }
 
-      document.getElementById('playSingle').addEventListener('click', () => {
-        const selectedVideo = document.querySelector('#playlist li.selected');
+      playSingleBtn.onclick = () => {
+        const selectedVideo = playlist.querySelector('.selected');
         if (selectedVideo) {
           const videoUrl = selectedVideo.dataset.url;
-          socket.emit('playVideo', videoUrl);  
+          console.log(`Attempting to emit playVideo for screen ${screen.name} with URL:`, videoUrl);
+          socket.emit('playVideo', { screen: screen.name, videoUrl });
         } else {
           alert('Select a video from the playlist');
         }
-      });
-  
+      };
 
-      document.getElementById('loopSingle').addEventListener('click', () => {
-        const selectedVideo = document.querySelector('#playlist li.selected');
+      loopSingleBtn.onclick = () => {
+        const selectedVideo = playlist.querySelector('.selected');
         if (selectedVideo) {
           const videoUrl = selectedVideo.dataset.url;
-          socket.emit('loopSingle', videoUrl);
+          console.log(`Attempting to emit loopSingle for screen ${screen.name} with URL:`, videoUrl);
+          socket.emit('loopSingle', { screen: screen.name, videoUrl });
         } else {
           alert('Select a video to loop');
         }
-      });
-  
+      };
 
-      document.getElementById('loopPlaylist').addEventListener('click', () => {
-        if (playlistArray.length > 0) {
-          socket.emit('startLoop', playlistArray);  
+      loopPlaylistBtn.onclick = () => {
+        const videoUrls = Array.from(playlist.children).map(li => li.dataset.url);
+        if (videoUrls.length > 0) {
+          console.log(`Attempting to emit startLoop for screen ${screen.name} with playlist URLs:`, videoUrls);
+          socket.emit('startLoop', { screen: screen.name, videoUrls });
         } else {
           alert('No videos in the playlist');
         }
-      });
-  
-     
-      loadPlaylist();
-    </script>
-  </body>
+      };
 
+      loadPlaylist();
+    }
+
+    loadScreens();
+  </script>
+</body>
 </html>

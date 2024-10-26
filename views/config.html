@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Config Page - Add Screens</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-900 text-gray-200 flex flex-col items-center justify-center">
+  <div class="w-full max-w-lg p-6 bg-gray-800 rounded-lg shadow-lg">
+    <h2 class="text-lg font-semibold mb-4">Add New Screen</h2>
+    <form id="addScreenForm" class="flex space-x-4">
+      <input type="text" id="screenName" class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 p-2 focus:outline-none" placeholder="Enter Screen Name" required>
+      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
+        Add Screen
+      </button>
+    </form>
+    
+    <h3 class="mt-6 text-lg font-semibold">Available Screens</h3>
+    <ul id="screenList" class="space-y-2 mt-4">
+      <!-- Dynamically added screens will be listed here -->
+    </ul>
+  </div>
+
+  <script>
+    const screenList = document.getElementById('screenList');
+
+    // Fetch existing screens (from server or local storage)
+    async function loadScreens() {
+      const response = await fetch('/screens');
+      const screens = await response.json();
+      screens.forEach(screen => {
+        addScreenToList(screen);
+      });
+    }
+
+    // Add a new screen to the list (UI and backend)
+    document.getElementById('addScreenForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const screenName = document.getElementById('screenName').value.trim();
+      if (screenName) {
+        const response = await fetch('/addScreen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ screenName })
+        });
+        if (response.ok) {
+          const screen = await response.json(); // Get the newly added screen from the server
+          addScreenToList(screen); // Add it to the UI
+          document.getElementById('screenName').value = ''; // Clear input
+        } else {
+          alert('Error adding screen');
+        }
+      }
+    };
+
+    // Function to add a screen to the UI
+    function addScreenToList(screen) {
+      const li = document.createElement('li');
+      li.innerText = `Screen: ${screen.name}`;
+      screenList.appendChild(li);
+    }
+
+    // Load existing screens when the page loads
+    loadScreens();
+  </script>
+</body>
+</html>
