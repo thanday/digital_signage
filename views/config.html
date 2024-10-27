@@ -37,7 +37,6 @@
         </form>
     </div>
 
-    <!-- List of existing screens with remove buttons -->
     <div id="screensContainer" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <!-- Screen items will be dynamically inserted here -->
     </div>
@@ -55,19 +54,20 @@
 
                 screens.forEach(screen => {
                     const screenDiv = document.createElement('div');
-                    screenDiv.classList.add('bg-gray-800', 'rounded-lg', 'p-6', 'shadow-lg', 'transform', 'transition', 'hover:scale-105', 'hover:shadow-xl');
+                    screenDiv.classList.add('bg-gray-700', 'rounded-lg', 'p-6', 'overflow-hidden', 'shadow-lg', 'transform', 'transition', 'hover:scale-105', 'hover:shadow-xl');
 
                     screenDiv.innerHTML = `
-            <div class="flex justify-between items-center">
-              <span class="text-lg font-semibold text-white">${screen.name}</span>
-              <button class="removeScreenBtn bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md transition"
+                    <div class="p-4 flex flex-col items-center">
+                <div class="bg-gray-800 w-full h-32 rounded-md mb-4 flex items-center justify-center">
+                  <p class="text-gray-400">Screen: ${screen.name}</p>
+                </div>
+                <button class="removeScreenBtn bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md transition"
                       data-screen="${screen.name}">Remove</button>
-            </div>
+              </div>
           `;
                     screensContainer.appendChild(screenDiv);
                 });
 
-                // Add event listeners to each remove button
                 document.querySelectorAll('.removeScreenBtn').forEach(button => {
                     button.addEventListener('click', async (event) => {
                         const screenName = event.target.dataset.screen;
@@ -79,7 +79,6 @@
             }
         }
 
-        // Function to handle screen addition
         document.getElementById('addScreenForm').addEventListener('submit', async (event) => {
             event.preventDefault();
             const screenName = document.getElementById('screenName').value.trim();
@@ -121,9 +120,6 @@
                 }
             }
         }
-
-
-        // Load screens on page load
         loadScreens();
     </script>
 </body>

@@ -13,20 +13,20 @@
 <body class="bg-gray-900 text-gray-200 min-h-screen p-6">
 
   <!-- Config Page Button -->
-  <div class="fixed top-6 left-6">
-    <a href="/config" class="bg-blue-600 mb-6 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300">
+  <div class="fixed top-6 left-6 mb-6">
+    <a href="/config" class="bg-green-600 mb-6 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300">
       Config Page
     </a>
   </div>
 
-  <!-- Page Title -->
-  <h1 class="text-3xl mt-10 font-bold text-center mb-8">Screen Dashboard</h1>
+  <h1 class="text-4xl mb-6 mt-8 text-center font-bold text-green-500">Screen Dashboard</h1>
 
-  <div id="screensContainer" class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+
+  <div id="screensContainer" class="grid gap-6 md:grid-cols-2 mt-8 lg:grid-cols-4">
     <!-- Thumbnails will be dynamically added here -->
   </div>
   <script>
-    // Fetch screens data and render thumbnails
+    // Fetch screens data 
     async function loadScreens() {
       try {
         const response = await fetch('/screens');
