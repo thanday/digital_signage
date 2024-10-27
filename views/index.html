@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link href="/css/output.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-900 text-gray-200 min-h-screen p-6">
+
+  <!-- Config Page Button -->
+  <div class="fixed top-6 left-6">
+    <a href="/config" class="bg-blue-600 mb-6 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300">
+      Config Page
+    </a>
+  </div>
+
+  <!-- Page Title -->
+  <h1 class="text-3xl mt-10 font-bold text-center mb-8">Screen Dashboard</h1>
+
+  <div id="screensContainer" class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <!-- Thumbnails will be dynamically added here -->
+  </div>
+  <script>
+    // Fetch screens data and render thumbnails
+    async function loadScreens() {
+      try {
+        const response = await fetch('/screens');
+        
+        if (!response.ok) {
+          console.error('Failed to fetch screens:', response.statusText);
+          return;
+        }
+  
+        const screens = await response.json();
+        console.log('Fetched screens data:', screens); // Log fetched data
+  
+        // Reference to the container
+        const screensContainer = document.getElementById('screensContainer');
+        screensContainer.innerHTML = ''; // Clear any existing content
+  
+        screens.forEach(screen => {
+          // Create a thumbnail for each screen
+          const screenDiv = document.createElement('div');
+          screenDiv.classList.add('bg-gray-700', 'rounded-lg', 'shadow-lg', 'overflow-hidden', 'hover:shadow-xl', 'transition-shadow', 'duration-300');
+  
+          // Thumbnail inner content
+          screenDiv.innerHTML = `
+            <a href="${screen.route}" class="block relative group">
+              <div class="p-4 flex flex-col items-center">
+                <div class="bg-gray-800 w-full h-32 rounded-md mb-4 flex items-center justify-center">
+                  <p class="text-gray-400">Screen: ${screen.name}</p>
+                </div>
+                <h2 class="text-lg font-semibold text-gray-300">${screen.name}</h2>
+                <p class="text-sm text-gray-400">Click to view</p>
+              </div>
+            </a>
+          `;
+  
+          // Add the thumbnail to the container
+          screensContainer.appendChild(screenDiv);
+        });
+      } catch (error) {
+        console.error('Error loading screens:', error);
+      }
+    }
+  
+    // Load the screens when the page loads
+    loadScreens();
+  </script>
+  
+  
+
+</body>
+
+</html>

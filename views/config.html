@@ -1,68 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Config Page - Add Screens</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Config</title>
+    <link href="/css/output.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
-<body class="min-h-screen bg-gray-900 text-gray-200 flex flex-col items-center justify-center">
-  <div class="w-full max-w-lg p-6 bg-gray-800 rounded-lg shadow-lg">
-    <h2 class="text-lg font-semibold mb-4">Add New Screen</h2>
-    <form id="addScreenForm" class="flex space-x-4">
-      <input type="text" id="screenName" class="block w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 p-2 focus:outline-none" placeholder="Enter Screen Name" required>
-      <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">
-        Add Screen
-      </button>
-    </form>
-    
-    <h3 class="mt-6 text-lg font-semibold">Available Screens</h3>
-    <ul id="screenList" class="space-y-2 mt-4">
-      <!-- Dynamically added screens will be listed here -->
-    </ul>
+
+<body class="bg-gray-900 text-gray-200 min-h-screen p-6">
+    <div class="float-start top-8 left-6">
+        <a href="/" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300">
+          HOME
+        </a>
+      </div>
+    <!-- logout-->
+  <div class="float-end top-8 left-6">
+    <a href="/logout" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300">
+      LOGOUT
+    </a>
   </div>
+    <h1 class="text-3xl font-bold mt-10 mb-6 text-center text-green-500">Screen Configuration</h1>
 
-  <script>
-    const screenList = document.getElementById('screenList');
+    <!-- Form to add a new screen -->
+    <div class="max-w-lg mx-auto mb-8">
+        <form id="addScreenForm" class="flex flex-col items-center bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-xl font-semibold text-gray-200 mb-4">Add New Screen</h2>
+            <input type="text" id="screenName" placeholder="Enter screen name"
+                class="px-4 py-2 rounded-md bg-gray-700 text-white w-full focus:outline-none focus:ring-2 focus:ring-green-500">
+            <button type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md mt-4 transition">
+                Add Screen
+            </button>
+        </form>
+    </div>
 
-    // Fetch existing screens (from server or local storage)
-    async function loadScreens() {
-      const response = await fetch('/screens');
-      const screens = await response.json();
-      screens.forEach(screen => {
-        addScreenToList(screen);
-      });
-    }
+    <!-- List of existing screens with remove buttons -->
+    <div id="screensContainer" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <!-- Screen items will be dynamically inserted here -->
+    </div>
 
-    // Add a new screen to the list (UI and backend)
-    document.getElementById('addScreenForm').onsubmit = async (e) => {
-      e.preventDefault();
-      const screenName = document.getElementById('screenName').value.trim();
-      if (screenName) {
-        const response = await fetch('/addScreen', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ screenName })
-        });
-        if (response.ok) {
-          const screen = await response.json(); // Get the newly added screen from the server
-          addScreenToList(screen); // Add it to the UI
-          document.getElementById('screenName').value = ''; // Clear input
-        } else {
-          alert('Error adding screen');
+    <script>
+        // Function to fetch and display all screens
+        async function loadScreens() {
+            try {
+                const response = await fetch('/screens');
+                const screens = await response.json();
+
+                // Populate the screensContainer with screens
+                const screensContainer = document.getElementById('screensContainer');
+                screensContainer.innerHTML = '';
+
+                screens.forEach(screen => {
+                    const screenDiv = document.createElement('div');
+                    screenDiv.classList.add('bg-gray-800', 'rounded-lg', 'p-6', 'shadow-lg', 'transform', 'transition', 'hover:scale-105', 'hover:shadow-xl');
+
+                    screenDiv.innerHTML = `
+            <div class="flex justify-between items-center">
+              <span class="text-lg font-semibold text-white">${screen.name}</span>
+              <button class="removeScreenBtn bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md transition"
+                      data-screen="${screen.name}">Remove</button>
+            </div>
+          `;
+                    screensContainer.appendChild(screenDiv);
+                });
+
+                // Add event listeners to each remove button
+                document.querySelectorAll('.removeScreenBtn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        const screenName = event.target.dataset.screen;
+                        await removeScreen(screenName);
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading screens:', error);
+            }
         }
-      }
-    };
 
-    // Function to add a screen to the UI
-    function addScreenToList(screen) {
-      const li = document.createElement('li');
-      li.innerText = `Screen: ${screen.name}`;
-      screenList.appendChild(li);
-    }
+        // Function to handle screen addition
+        document.getElementById('addScreenForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const screenName = document.getElementById('screenName').value.trim();
 
-    // Load existing screens when the page loads
-    loadScreens();
-  </script>
+            if (screenName) {
+                try {
+                    const response = await fetch('/addScreen', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ screenName })
+                    });
+
+                    if (response.ok) {
+                        document.getElementById('screenName').value = '';
+                        loadScreens(); // Refresh screen list after addition
+                    } else {
+                        alert('Failed to add screen');
+                    }
+                } catch (error) {
+                    console.error('Error adding screen:', error);
+                }
+            }
+        });
+
+        // Function to remove a screen
+        async function removeScreen(screenName) {
+            if (confirm(`Are you sure you want to remove the screen "${screenName}"?`)) {
+                try {
+                    const response = await fetch(`/removeScreen/${screenName}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        alert(`Screen "${screenName}" removed successfully`);
+                        loadScreens(); // Refresh screen list after deletion
+                    } else {
+                        alert('Failed to remove screen');
+                    }
+                } catch (error) {
+                    console.error('Error removing screen:', error);
+                    alert('An error occurred while trying to remove the screen.');
+                }
+            }
+        }
+
+
+        // Load screens on page load
+        loadScreens();
+    </script>
 </body>
+
 </html>

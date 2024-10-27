@@ -5,26 +5,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controller</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="/socket.io/socket.io.js"></script>
   <link href="/css/output.css" rel="stylesheet">
 </head>
 
 <body class="bg-gray-900 text-gray-200 p-6">
-  <h1 class="text-4xl mb-6 text-center">Multi-Screen Controller</h1>
 
-  <div id="controllerContainer" 
-       class="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  <!-- Logout Button -->
+  <div class="absolute top-6 right-6">
+    <a href="/logout" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-300">
+      LOGOUT
+    </a>
+  </div>
+
+  <h1 class="text-4xl mb-6 text-center font-bold text-green-500">Multi-Screen Controller</h1>
+
+  <!-- Screen controllers container -->
+  <div id="controllerContainer" class="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
   </div>
 
   <script>
-    const socket = io.connect('http://143.198.85.144:3000');
-    socket.on('connect_error', (err) => {
-      console.error('Socket.IO Connection Error:', err);
-    });
-
-    socket.on('disconnect', (reason) => {
-      console.log('Socket.IO Disconnected:', reason);
-    });
+    const socket = io.connect('http://localhost:3000');
+    socket.on('connect_error', (err) => console.error('Socket.IO Connection Error:', err));
+    socket.on('disconnect', (reason) => console.log('Socket.IO Disconnected:', reason));
 
     const controllerContainer = document.getElementById('controllerContainer');
 
@@ -36,30 +40,39 @@
 
     function createControllerForScreen(screen) {
       const controllerDiv = document.createElement('div');
-      controllerDiv.classList.add('bg-gray-600', 'rounded-lg', 'p-6', 'shadow-lg');
+      controllerDiv.classList.add('bg-gray-800', 'rounded-lg', 'p-6', 'shadow-lg');
 
       controllerDiv.innerHTML = `
         <div class="flex flex-col items-center mb-4">
           <h2 class="text-lg font-semibold text-gray-300">Controller for ${screen.name}</h2>
         </div>
-        <div class="grid grid-cols-12 gap-4">
-          <div class="col-span-3 bg-gray-700 p-4 rounded-lg">
+
+        <div class="grid gap-4">
+          <!-- Playlist Panel -->
+          <div class="bg-gray-700 p-4 rounded-lg">
             <h2 class="text-lg font-semibold mb-4 text-gray-300">Playlist</h2>
-            <ul class="playlist space-y-2 overflow-y-auto h-72"></ul>
+            <ul class="playlist space-y-2 overflow-y-auto h-48"></ul>
+            <!-- Action Buttons Row under Playlist -->
+            <div class="flex space-x-2 mt-4">
+              <button class="playSingleBtn flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg">Play Selected</button>
+              <button class="loopSingleBtn flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg">Loop Single</button>
+              <button class="loopPlaylistBtn flex-1 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold py-2 px-4 rounded-lg">Loop Playlist</button>
+            </div>
           </div>
-          <div class="col-span-6 bg-gray-700 p-4 rounded-lg flex flex-col items-center">
+
+          <!-- Video Preview Panel -->
+          <div class="bg-gray-700 p-4 rounded-lg">
             <h2 class="text-lg font-semibold mb-4 text-gray-300">Video Preview</h2>
             <video class="videoPreview w-full bg-black rounded-lg mb-4" controls></video>
           </div>
-          <div class="col-span-3 bg-gray-700 p-4 rounded-lg">
-            <h2 class="text-lg font-semibold mb-4 text-gray-300">Controls</h2>
+
+          <!-- File Upload Form -->
+          <div class="bg-gray-700 p-4 rounded-lg">
+            <h2 class="text-lg font-semibold mb-4 text-gray-300">Upload New Video</h2>
             <form class="uploadForm">
               <input type="file" name="videoFile" class="block w-full text-sm bg-gray-50 rounded-lg border border-gray-300 cursor-pointer">
               <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg mt-2">Upload Video</button>
             </form>
-            <button class="playSingleBtn w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg mt-4">Play Selected</button>
-            <button class="loopSingleBtn w-full bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg mt-4">Loop Single</button>
-            <button class="loopPlaylistBtn w-full bg-yellow-500 text-gray-900 font-semibold py-2 px-4 rounded-lg mt-4">Loop Playlist</button>
           </div>
         </div>
       `;
@@ -98,7 +111,7 @@
           // Delete button event
           const deleteBtn = document.createElement('button');
           deleteBtn.innerText = 'Delete';
-          deleteBtn.classList.add('deleteBtn', 'bg-red-500', 'text-white', 'rounded', 'px-2', 'ml-2');
+          deleteBtn.classList.add('deleteBtn', 'bg-red-500', 'text-white-500', 'rounded', 'px-2', 'ml-2');
           deleteBtn.onclick = async (e) => {
             e.stopPropagation();
             const confirmed = confirm(`Are you sure you want to delete ${fileName}?`);
@@ -135,7 +148,6 @@
         const selectedVideo = playlist.querySelector('.selected');
         if (selectedVideo) {
           const videoUrl = selectedVideo.dataset.url;
-          console.log(`Attempting to emit playVideo for screen ${screen.name} with URL:`, videoUrl);
           socket.emit('playVideo', { screen: screen.name, videoUrl });
         } else {
           alert('Select a video from the playlist');
@@ -146,7 +158,6 @@
         const selectedVideo = playlist.querySelector('.selected');
         if (selectedVideo) {
           const videoUrl = selectedVideo.dataset.url;
-          console.log(`Attempting to emit loopSingle for screen ${screen.name} with URL:`, videoUrl);
           socket.emit('loopSingle', { screen: screen.name, videoUrl });
         } else {
           alert('Select a video to loop');
@@ -156,7 +167,6 @@
       loopPlaylistBtn.onclick = () => {
         const videoUrls = Array.from(playlist.children).map(li => li.dataset.url);
         if (videoUrls.length > 0) {
-          console.log(`Attempting to emit startLoop for screen ${screen.name} with playlist URLs:`, videoUrls);
           socket.emit('startLoop', { screen: screen.name, videoUrls });
         } else {
           alert('No videos in the playlist');
