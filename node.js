@@ -48,7 +48,6 @@ function saveScreensToFile() {
     }
 }
 
-// Load screens initially on server startup
 loadScreensFromFile();
 
 // Serve the index page
@@ -204,6 +203,15 @@ io.on('connection', (socket) => {
         console.log(`Broadcasting loopSingle event to screen: ${screen} with URL: ${videoUrl}`);
         io.emit('loopSingle', { screen, videoUrl });
     });
+
+    // Emit startLoop to all screens (or handle screen-specific event handling in the client)
+    socket.on('startLoop', ({ screen, videoUrls }) => {
+        console.log(`Broadcasting startLoop event to screen: ${screen} with URLs:`, videoUrls);
+        io.emit(`startLoop_${screen}`, { screen, videoUrls });  // Emit globally but with a unique screen identifier
+    });
+
+
+
 
     socket.on('disconnect', () => console.log('Client disconnected'));
 });

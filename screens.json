@@ -12,7 +12,7 @@
     "route": "/screen/three"
   },
   {
-    "name": "Four",
-    "route": "/screen/Four"
+    "name": "MeetingRoom",
+    "route": "/screen/MeetingRoom"
   }
 ]

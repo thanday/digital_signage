@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/output.css" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
             margin: 0;
             overflow: hidden;
+            background-color: black;
         }
-
         video {
             width: 100%;
             height: 100%;
@@ -20,122 +21,89 @@
         }
     </style>
 </head>
-
 <body>
-    <video id="videoPlayer" controls autoplay muted>
-        <source id="videoSource" src="" type="video/mp4">
-        Your browser does not support the video tag.
-    </video>
+    <video id="videoPlayer" autoplay muted></video>
 
     <script>
         const player = document.getElementById('videoPlayer');
-        const source = document.getElementById('videoSource');
         const socket = io.connect('http://localhost:3000');
-
-        // Get the screen name from the URL path
         const screenName = window.location.pathname.split('/').pop();
-        console.log(`Screen initialized with screenName: ${screenName}`);
-
-        // Log WebSocket connection status
-        socket.on('connect', () => {
-            console.log(`WebSocket connected on screen ${screenName}`);
-        });
-
-        socket.on('connect_error', (err) => {
-            console.error(`WebSocket connection error on screen ${screenName}:`, err);
-        });
-
-        socket.on('disconnect', (reason) => {
-            console.log(`WebSocket disconnected on screen ${screenName}. Reason: ${reason}`);
-        });
 
         let playlist = [];
         let currentVideoIndex = 0;
         let loopSingleVideo = false;
 
+        console.log(`Screen initialized with screenName: ${screenName}`);
+
         // Function to load and play video
-        function loadAndPlayVideo(videoUrl, hideControls = false) {
-            console.log(`Loading video URL on screen ${screenName}: ${videoUrl}`);
-            if (hideControls) {
-                player.removeAttribute('controls');
-            }
-            source.src = videoUrl;
+        function loadAndPlayVideo(videoUrl) {
+            player.src = videoUrl;
             player.load();
-            player.play().then(() => {
-                if (hideControls) {
-                    player.controls = false;
-                }
-                console.log(`Playing video URL on screen ${screenName}: ${videoUrl}`);
-            }).catch(error => {
-                console.error(`Error playing video on screen ${screenName}:`, error);
+            player.play().catch(error => {
+                console.error("Playback error:", error);
+                setTimeout(() => loadAndPlayVideo(videoUrl), 1000); // Retry after 1s if there’s an error
             });
         }
 
-        // WebSocket Event Handlers with Detailed Logs
-        socket.on('playVideo', ({ screen, videoUrl }) => {
-            console.log(`Event received: playVideo for screen ${screen} - Intended for: ${screenName}`);
-            if (screen === screenName) {
-                console.log(`Correct screen: Starting single video playback on ${screenName} with URL: ${videoUrl}`);
-                loopSingleVideo = false;
-                loadAndPlayVideo(videoUrl, false);
-            } else {
-                console.log(`Ignoring playVideo: Not intended for screen ${screenName}`);
-            }
-        });
+        // Function to play next video in playlist
+        function playNextVideoInPlaylist() {
+            currentVideoIndex = (currentVideoIndex + 1) % playlist.length;
+            console.log(`Playing next video in playlist: ${playlist[currentVideoIndex]}`);
+            loadAndPlayVideo(playlist[currentVideoIndex]);
+        }
 
-        socket.on('loopSingle', ({ screen, videoUrl }) => {
-            console.log(`Event received: loopSingle for screen ${screen} - Intended for: ${screenName}`);
-            if (screen === screenName) {
-                console.log(`Correct screen: Starting single loop on ${screenName} with URL: ${videoUrl}`);
-                loopSingleVideo = true;
-                loadAndPlayVideo(videoUrl, true);
-            } else {
-                console.log(`Ignoring loopSingle: Not intended for screen ${screenName}`);
-            }
-        });
-
-        socket.on('startLoop', ({ screen, videoUrls }) => {
-            console.log(`Event received: startLoop for screen ${screen} - Intended for: ${screenName}`);
-            if (screen === screenName) {
-                console.log(`Correct screen: Starting playlist loop on ${screenName} with URLs:`, videoUrls);
-                loopSingleVideo = false;
-                playlist = videoUrls;
-                currentVideoIndex = 0;
-                loadAndPlayVideo(playlist[currentVideoIndex], true);
-            } else {
-                console.log(`Ignoring startLoop: Not intended for screen ${screenName}`);
-            }
-        });
-
-        socket.on('genericEvent', ({ action, screen, videoUrl }) => {
-            console.log(`Received genericEvent with action: ${action} for screen: ${screen}`);
-            if (screen === screenName) {
-                console.log(`Correct screen. Starting action: ${action} with URL: ${videoUrl}`);
-                if (action === 'playVideo') {
-                    source.src = videoUrl;
-                    player.load();
-                    player.play().catch(err => console.error('Manual play error:', err));
-                }
-            }
-        });
-
-
-
-        // Automatically play the next video in the playlist or loop the single video
+        // Event listeners
         player.addEventListener('ended', () => {
             if (loopSingleVideo) {
                 player.currentTime = 0;
                 player.play();
             } else if (playlist.length > 0) {
-                currentVideoIndex = (currentVideoIndex + 1) % playlist.length;
-                loadAndPlayVideo(playlist[currentVideoIndex], true);
+                playNextVideoInPlaylist();
             }
         });
 
-        player.addEventListener('loadeddata', () => {
-            player.controls = true;
+        // Socket events
+        socket.on(`startLoop_${screenName}`, ({ screen, videoUrls }) => {
+            if (screen === screenName) {
+                console.log(`Received startLoop for screen ${screenName} with playlist URLs:`, videoUrls);
+                playlist = videoUrls;
+                currentVideoIndex = 0;
+                loopSingleVideo = false;
+
+                if (playlist.length > 0) {
+                    loadAndPlayVideo(playlist[currentVideoIndex]);
+                } else {
+                    console.error("Playlist is empty, cannot start loop.");
+                }
+            }
         });
+
+        socket.on('playVideo', ({ screen, videoUrl }) => {
+            if (screen === screenName) {
+                loopSingleVideo = false;
+                loadAndPlayVideo(videoUrl);
+            }
+        });
+
+        socket.on('loopSingle', ({ screen, videoUrl }) => {
+            if (screen === screenName) {
+                loopSingleVideo = true;
+                loadAndPlayVideo(videoUrl);
+            }
+        });
+
+        // Handle double-click to toggle fullscreen
+        document.addEventListener('dblclick', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        socket.on('connect', () => console.log(`WebSocket connected on screen ${screenName}`));
+        socket.on('connect_error', (err) => console.error(`WebSocket connection error:`, err));
+        socket.on('disconnect', (reason) => console.log(`WebSocket disconnected. Reason: ${reason}`));
     </script>
 </body>
-
 </html>
