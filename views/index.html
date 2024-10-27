@@ -43,7 +43,7 @@
   
         // Reference to the container
         const screensContainer = document.getElementById('screensContainer');
-        screensContainer.innerHTML = ''; // Clear any existing content
+        screensContainer.innerHTML = ''; 
   
         screens.forEach(screen => {
           // Create a thumbnail for each screen
@@ -63,7 +63,7 @@
             </a>
           `;
   
-          // Add the thumbnail to the container
+
           screensContainer.appendChild(screenDiv);
         });
       } catch (error) {
@@ -71,7 +71,6 @@
       }
     }
   
-    // Load the screens when the page loads
     loadScreens();
   </script>
 

@@ -27,7 +27,7 @@
   </div>
 
   <script>
-    const socket = io.connect('http://localhost:3000');
+    const socket = io.connect('http://143.198.85.144:3000');
     socket.on('connect_error', (err) => console.error('Socket.IO Connection Error:', err));
     socket.on('disconnect', (reason) => console.log('Socket.IO Disconnected:', reason));
 
